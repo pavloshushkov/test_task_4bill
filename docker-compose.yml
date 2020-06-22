@@ -1,0 +1,24 @@
+version: '3.7'
+services:
+  db:
+    image: postgres:10.1-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+  web:
+    build: .
+    command: python /code/manage.py runserver 0:8000
+    volumes:
+      - .:/code
+    ports:
+      - 8000:8000
+    depends_on:
+      - db
+  # this service will use same image, and once the migration is done it will be stopped
+  web_migrations:
+    build: .
+    command: ./manage.py migrate
+    depends_on:
+      - db
+      - web
+volumes:
+  postgres_data:
