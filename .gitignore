@@ -1,0 +1,13 @@
+.env/*
+logs/
+.DS_Store
+*.pyc
+*.pyo
+.idea
+*.sqlite3
+settings_local.py
+static_files
+celerybeat-schedule
+media
+static_files
+bower_components/*
