@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.db.models import F
 from django.utils import timezone
 
 from rest_framework.views import APIView
@@ -12,31 +13,31 @@ class RequestView(APIView):
 
     def get(self, request, amount):
         time = timezone.now()
-        find_last_request = models.Request.objects.last()
+        last_request = models.Request.objects.last()
         max_limit = max(settings.AMOUNT_LIMITS_CONFIG.items())
         min_limit = min(settings.AMOUNT_LIMITS_CONFIG.items())
 
-        if find_last_request:
-            delta = (time - find_last_request.time).total_seconds()
-            amount_limits = dict(sorted(settings.AMOUNT_LIMITS_CONFIG.items(), reverse=True))
+        if last_request:
+            delta = (time - last_request.time).total_seconds()
             max_amount, seconds = 0, 0
 
-            if delta > max_limit[0]:
-                find_last_request = models.Request.objects.create(time=time)
-                delta = (time - find_last_request.time).total_seconds()
+            if delta >= max_limit[0]:
+                last_request = models.Request.objects.create(time=time)
+                delta = 0
 
-            for k, v in amount_limits.items():
-                if delta < k:
-                    seconds, max_amount = k, v
+            for interval, limit in sorted(settings.AMOUNT_LIMITS_CONFIG.items()):
+                if delta < interval:
+                    seconds, max_amount = interval, limit
+                    break
 
             if max_amount and seconds:
-                if find_last_request.amount + amount <= max_amount:
-                    find_last_request.amount += amount
-                    find_last_request.save()
+                if last_request.amount + amount <= max_amount:
+                    last_request.amount = F('amount') + amount
+                    last_request.save()
                     return Response({"result": "OK"})
                 return Response({"error": f"amount limit exeeded ({max_amount}/{seconds}sec)"})
 
-        elif not find_last_request:
+        elif not last_request:
             if amount > min_limit[1]:
                 return Response({"error": f"amount limit exeeded ({min_limit[1]}/{min_limit[0]}sec)"})
             created = models.Request.objects.create(amount=amount, time=time)
