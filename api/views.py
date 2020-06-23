@@ -1,7 +1,9 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
 from django.conf import settings
 from django.utils import timezone
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+
 from . import models
 
 
@@ -12,6 +14,7 @@ class RequestView(APIView):
         time = timezone.now()
         find_last_request = models.Request.objects.last()
         max_limit = max(settings.AMOUNT_LIMITS_CONFIG.items())
+        min_limit = min(settings.AMOUNT_LIMITS_CONFIG.items())
 
         if find_last_request:
             delta = (time - find_last_request.time).total_seconds()
@@ -34,7 +37,8 @@ class RequestView(APIView):
                 return Response({"error": f"amount limit exeeded ({max_amount}/{seconds}sec)"})
 
         elif not find_last_request:
-            # @todo: Первый платеж без лимита?
+            if amount > min_limit[1]:
+                return Response({"error": f"amount limit exeeded ({min_limit[1]}/{min_limit[0]}sec)"})
             created = models.Request.objects.create(amount=amount, time=time)
             if created:
                 return Response({"result": "OK"})
