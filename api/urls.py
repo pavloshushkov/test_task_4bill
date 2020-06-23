@@ -19,5 +19,6 @@ from . import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('request/<int:amount>/', views.RequestView.as_view(), name='request')
+    path('request/<int:amount>/', views.RequestView.as_view(), name='request'),
+    path('request2/<int:amount>/', views.RequestSecondView.as_view(), name='request_second'),
 ]
